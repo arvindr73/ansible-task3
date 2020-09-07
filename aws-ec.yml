@@ -1,0 +1,54 @@
+- hosts: localhost
+  gather_facts: False
+  vars:
+  - hostname: "{{ ec2['instances'][0]['public_ip'] }}"
+  vars_files:
+       - awscred.yml
+  tasks:
+  - name: Provision EC2 instance on AWS cloud using Ansible Playbook
+    ec2:
+       key_name: "ansitst"
+       instance_type: "t2.micro"
+       image: "ami-0ebc1ac48dfd14136"
+       wait: yes
+       count: 1
+       assign_public_ip: yes
+       region: "ap-south-1"
+       state: present
+       vpc_subnet_id: "subnet-b14d49d9"
+       group_id: "sg-0fcfd30fedad1d6b0"
+       instance_ids : "i-02cfd77c12411737b"
+       aws_access_key: "{{ username }}"
+       aws_secret_key: "{{ password }}"
+       instance_tags:
+           Name: "Webserver"
+    register: ec2
+
+  - name: Launch LoadBalancer on AWS cloud using Ansible Playbook
+    ec2:
+       key_name: "ansitst"
+       instance_type: "t2.micro"
+       image: "ami-0ebc1ac48dfd14136"
+       wait: yes
+       count: 1
+       assign_public_ip: yes
+       region: "ap-south-1"
+       state: present
+       vpc_subnet_id: "subnet-b14d49d9"
+       group_id: "sg-0fcfd30fedad1d6b0"
+       instance_ids : "i-02cfd77c12411737b"
+       aws_access_key: "{{ username }}"
+       aws_secret_key: "{{ password }}"
+       instance_tags:
+           Name: "LoadBalancer"
+
+  - name: Add new instance to  host group
+    add_host:
+       hostname: "{{ ec2['instances'][0]['public_ip'] }}"
+       groupname: launched
+    with_items:  ec2.instances
+    register: x
+  - debug:
+       var: x
+  - debug:
+       msg: " IP Address of EC2 instance is {{ hostname }} "
